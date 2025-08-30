@@ -2,8 +2,17 @@ on:
   push:
     branches:
       - main
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       # https://github.com/marketplace/actions/checkout
@@ -11,20 +20,13 @@ jobs:
       # https://github.com/marketplace/actions/setup-node-js-environment
       - uses: actions/setup-node@v4
       - run: npm ci
-      # - name: cleanup
-      #   run: |
-      #     cd lib
-      #     find . -maxdepth 1 -type f ! -name 'db.js' ! -name 'utils.js' -exec rm -f {} +
-      #     # public folder
-      #     cd ../public
-      #     find . -maxdepth 1 -type f -delete
-      #     cd svg
-      #     find . -maxdepth 1 -name '*.json' ! -name 'spritesheet.json' ! -name 'spritesheet@2x.json' -exec rm {} +
-      # # https://github.com/marketplace/actions/copy-push-files-action
-      # - uses: GuillaumeFalourd/copy-push-files@v1
-      #   with:
-      #     source_files: readme.md postcss.config.mjs package.json package-lock.json next.config.mjs license jsconfig.json components.json .gitignore .example.env public prisma lib components app
-      #     remote_repository: https://github.com/codabool/stargazer
-      #     target_branch: main
-      #     access_token: ${{ secrets.TOKEN }}
-      #     commit_message: build ${{ toJSON(github.run_number) }} hash ${GITHUB_SHA::7}
+      - run: npm run build
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "demo"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
